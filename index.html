@@ -19,15 +19,24 @@
         <div id="backdrop"></div>
         <aside class="modal" id="overlay">
           <h2>Choose your name</h2>
-          
+
           <form>
             <div class="form__control">
-              <label for="playername" >Player Name</label>
-              <input type="text" name="playername" itemref="playername" id="userInput" maxlength="8" required/>
+              <label for="playername">Player Name</label>
+              <input
+                type="text"
+                name="playername"
+                itemref="playername"
+                id="userInput"
+                maxlength="8"
+                required
+              />
             </div>
             <p id="error-message"></p>
             <div>
-              <button type="button" class="btn btn-alt" id="cancel-config">Cancel</button>
+              <button type="button" class="btn btn-alt" id="cancel-config">
+                Cancel
+              </button>
               <button type="submit" class="btn">Confirm</button>
             </div>
           </form>
@@ -40,7 +49,9 @@
               <h2>Player 1</h2>
               <h3 id="player-one-username">PLAYER NAME</h3>
               <p class="player-symbol">X</p>
-              <button class="btn btn-alt" id="edit-player1" data-player="1">Edit</button>
+              <button class="btn btn-alt" id="edit-player1" data-player="1">
+                Edit
+              </button>
               <p class="score">Score: <span id="score-1">0</span></p>
             </article>
           </li>
@@ -49,8 +60,10 @@
               <h2>Player 2</h2>
               <h3>PLAYER NAME</h3>
               <p class="player-symbol">O</p>
-              <button class="btn btn-alt" id="edit-player2" data-player="2">Edit</button>
-              <p class="score" >Score: <span id="score-2">0</span></p>
+              <button class="btn btn-alt" id="edit-player2" data-player="2">
+                Edit
+              </button>
+              <p class="score">Score: <span id="score-2">0</span></p>
             </article>
           </li>
         </ol>
@@ -62,8 +75,12 @@
           <p>Click "start new game above, to start a new game</p>
         </article>
         <p>
-          it's your turn?<span class="active-player-name" id="activePlayer">PLAYER NAME</span>
+          it's your turn?<span class="active-player-name" id="activePlayer"
+            >PLAYER NAME</span
+          >
         </p>
+        <p>Time left: <span id="timer">10</span>s</p>
+        
         <ol id="game-board">
           <li data-col="1" data-row="1"></li>
           <li data-col="2" data-row="1"></li>

@@ -1,131 +1,200 @@
-function reset() {
-  activeplayer = 0;
-  currentRound = 0;
-  isGameOver = false;
-  gameWinner.children[0].innerHTML = "<h2>You won</h2>";
-  gameWinner.classList.add("hidden");
+// ===================== GAME.JS =====================
+// ===================== TIMER LOGIC =====================
+let timer;
+let timeLeft = 10;
 
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      game[i][j] = 0;
+function startTimer() {
+  clearInterval(timer);
+  timeLeft = 10;
+  document.getElementById("timer").textContent = timeLeft;
+
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      handleTimeout();
     }
-  }
-  clickedField.forEach(function (li) {
-    li.classList.remove("disabled");
-    li.textContent = "";
-  });
-  switchPlayer()
+  }, 1000);
 }
 
-function startGame() {
-  if (player[0].name == "" || player[1].name == "") {
-    alert("Input a Player");
-    return;
+function handleTimeout() {
+  if (isGameOver) return;
+  // Auto switch turn if time runs out
+  switchPlayer();
+
+  // If AI's turn, trigger AI immediately
+  if (activeplayer === 1 && !isGameOver) {
+    setTimeout(aiMove, 500);
   }
-  reset();
-  activePlayerName.textContent = player[activeplayer].name;
-  document.getElementById("active-game").style.display = "block";
 }
-
-function checkForGameOver() {
-  for (let i = 0; i < 3; i++) {
-    if (
-      game[i][0] > 0 &&
-      game[i][0] === game[i][1] &&
-      game[i][0] === game[i][2]
-    ) {
-      return game[i][0];
-    }
-  }
-  for (let i = 0; i < 3; i++) {
-    if (
-      game[0][i] > 0 &&
-      game[0][i] === game[1][i] &&
-      game[0][i] === game[2][i]
-    ) {
-      return game[0][i];
-    }
-  }
-  if (
-    game[0][0] > 0 &&
-    game[0][0] === game[1][1] &&
-    game[0][0] === game[2][2]
-  ) {
-    return game[0][0];
-  }
-  if (
-    game[0][2] > 0 &&
-    game[0][2] === game[1][1] &&
-    game[0][2] === game[2][0]
-  ) {
-    return game[0][2];
-  }
-  if (currentRound === 9) {
-    return -1;
-  }
-
-  return 0;
-}
-
-function switchPlayer() {
-  if (activeplayer == 0) {
-    activeplayer = 1;
-  } else {
-    activeplayer = 0;
-  }
-  activePlayerName.textContent = player[activeplayer].name;
-}
-
-const gameOver = function (winnerId) {
-  isGameOver = true;
-  if (winnerId > 0) {
-    gameWinner.classList.remove("hidden");
-    player[activeplayer].score++;
-    
-    gameWinner.children[0].textContent = `${player[activeplayer].name} Won🎉🎉`;
-   
-  } else {
-    gameWinner.classList.remove("hidden");
-    gameWinner.children[0].textContent = `It is a Draw`;
-  }
-   document.getElementById(
-      `score-${activeplayer + 1}`
-    ).textContent = player[activeplayer].score;
-    
-};
 
 function clickedElement(e) {
-  if (isGameOver) {
-    return;
-  }
+  if (isGameOver || activeplayer === 1) return; // block clicks on AI turn
+
   const click = e.target;
   const clickedRow = click.dataset.row - 1;
   const clickedCol = click.dataset.col - 1;
-  if (game[clickedRow][clickedCol] > 0) {
-    return;
-  }
-  currentRound++;
-  click.textContent = player[activeplayer].symbol;
-  click.classList.add("disabled");
-  game[clickedRow][clickedCol] = activeplayer + 1;
 
-  const winnerId = +checkForGameOver();
+  if (game[clickedRow][clickedCol] > 0) return;
+
+  makeMove(clickedRow, clickedCol, click, activeplayer);
+
+  const winnerId = checkForGameOver();
   if (winnerId !== 0) {
     gameOver(winnerId);
+    return;
   }
-  console.log(winnerId);
 
   switchPlayer();
+  startTimer(); // restart timer after human move
+
+  // AI move
+  if (!isGameOver && activeplayer === 1) {
+    setTimeout(aiMove, 500);
+  }
+
+  function makeMove(row, col, cell, playerIndex) {
+    currentRound++;
+    game[row][col] = playerIndex + 1;
+    cell.textContent = player[playerIndex].symbol;
+    cell.classList.add("disabled");
+  }
+
+  function aiMove() {
+    let bestScore = -Infinity;
+    let move = null;
+
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (game[i][j] === 0) {
+          game[i][j] = 2; // AI always player 2
+          let score = minimax(game, 0, false);
+          game[i][j] = 0;
+          if (score > bestScore) {
+            bestScore = score;
+            move = { i, j };
+          }
+        }
+      }
+    }
+
+    if (move) {
+      const index = move.i * 3 + move.j;
+      const cell = clickedField[index];
+      makeMove(move.i, move.j, cell, 1);
+
+      const winnerId = checkForGameOver();
+      if (winnerId !== 0) {
+        gameOver(winnerId);
+        return;
+      }
+
+      switchPlayer();
+      startTimer(); // restart timer after AI move
+
+    }
+  }
+
+  // Minimax algorithm for AI
+  function minimax(board, depth, isMaximizing) {
+    const result = checkWinnerForAI(board);
+    if (result !== null) {
+      if (result === 2) return 10 - depth;
+      if (result === 1) return depth - 10;
+      if (result === "draw") return 0;
+    }
+
+    if (isMaximizing) {
+      let bestScore = -Infinity;
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (board[i][j] === 0) {
+            board[i][j] = 2;
+            let score = minimax(board, depth + 1, false);
+            board[i][j] = 0;
+            bestScore = Math.max(score, bestScore);
+          }
+        }
+      }
+      return bestScore;
+    } else {
+      let bestScore = Infinity;
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          if (board[i][j] === 0) {
+            board[i][j] = 1;
+            let score = minimax(board, depth + 1, true);
+            board[i][j] = 0;
+            bestScore = Math.min(score, bestScore);
+          }
+        }
+      }
+      return bestScore;
+    }
+  }
+
+  function checkWinnerForAI(board) {
+    // Rows & Columns
+    for (let i = 0; i < 3; i++) {
+      if (
+        board[i][0] &&
+        board[i][0] === board[i][1] &&
+        board[i][0] === board[i][2]
+      )
+        return board[i][0];
+      if (
+        board[0][i] &&
+        board[0][i] === board[1][i] &&
+        board[0][i] === board[2][i]
+      )
+        return board[0][i];
+    }
+    // Diagonals
+    if (
+      board[0][0] &&
+      board[0][0] === board[1][1] &&
+      board[0][0] === board[2][2]
+    )
+      return board[0][0];
+    if (
+      board[0][2] &&
+      board[0][2] === board[1][1] &&
+      board[0][2] === board[2][0]
+    )
+      return board[0][2];
+
+    // Draw
+    let openSpots = 0;
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++) if (board[i][j] === 0) openSpots++;
+
+    return openSpots === 0 ? "draw" : null;
+  }
+
+  function checkForGameOver() {
+    return checkWinnerForAI(game) || 0;
+  }
+
+  function switchPlayer() {
+    activeplayer = activeplayer === 0 ? 1 : 0;
+    activePlayerName.textContent = player[activeplayer].name;
+  }
+
+  function gameOver(winnerId) {
+    isGameOver = true;
+    gameWinner.classList.remove("hidden");
+
+    if (winnerId === "draw") {
+      gameWinner.children[0].textContent = "It is a Draw!";
+    } else {
+      player[winnerId - 1].score++;
+      gameWinner.children[0].textContent = `${
+        player[winnerId - 1].name
+      } Won 🎉`;
+      document.getElementById(`score-${winnerId}`).textContent =
+        player[winnerId - 1].score;
+    }
+  }
 }
-
-function restartFullGame() {
-  reset();
-  document.querySelectorAll(".score")[0].innerHTML = `Score: <span id="score-1 score">0</span>`
-  document.querySelectorAll(".score")[1].innerHTML = `Score: <span id="score-2 score">0</span>`
-  document.querySelectorAll(".users")[0].children[1].innerHTML = `PLAYER NAME`
-  document.querySelectorAll(".users")[1].children[1].innerHTML = `PLAYER NAME`
-  document.getElementById("active-game").style.display = "none"
-}
-
-
-
