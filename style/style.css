@@ -33,3 +33,6 @@ body{
     background-color: rgb(201, 175, 224);
     border-color: transparent;
 }
+.score{
+    font-weight: bold;
+}

@@ -1,28 +1,28 @@
 function reset() {
   activeplayer = 0;
   currentRound = 0;
-  isGameOver = false
+  isGameOver = false;
   gameWinner.children[0].innerHTML = "<h2>You won</h2>";
-  gameWinner.classList.add("hidden")
+  gameWinner.classList.add("hidden");
 
-  for(let i = 0; i<3; i++){
-    for(let j = 0; j<3; j++){
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
       game[i][j] = 0;
     }
   }
-  clickedField.forEach(function(li){
+  clickedField.forEach(function (li) {
     li.classList.remove("disabled");
-    li.textContent = ''
-  })
+    li.textContent = "";
+  });
+  switchPlayer()
 }
-
 
 function startGame() {
   if (player[0].name == "" || player[1].name == "") {
     alert("Input a Player");
     return;
   }
-  reset()
+  reset();
   activePlayerName.textContent = player[activeplayer].name;
   document.getElementById("active-game").style.display = "block";
 }
@@ -34,7 +34,6 @@ function checkForGameOver() {
       game[i][0] === game[i][1] &&
       game[i][0] === game[i][2]
     ) {
-      
       return game[i][0];
     }
   }
@@ -68,7 +67,6 @@ function checkForGameOver() {
   return 0;
 }
 
-
 function switchPlayer() {
   if (activeplayer == 0) {
     activeplayer = 1;
@@ -78,22 +76,27 @@ function switchPlayer() {
   activePlayerName.textContent = player[activeplayer].name;
 }
 
-
-const gameOver = function(winnerId){
+const gameOver = function (winnerId) {
   isGameOver = true;
   if (winnerId > 0) {
     gameWinner.classList.remove("hidden");
+    player[activeplayer].score++;
+    
     gameWinner.children[0].textContent = `${player[activeplayer].name} Won🎉🎉`;
-  } else if (winnerId === -1) {
+   
+  } else {
     gameWinner.classList.remove("hidden");
     gameWinner.children[0].textContent = `It is a Draw`;
   }
-}
-
+   document.getElementById(
+      `score-${activeplayer + 1}`
+    ).textContent = player[activeplayer].score;
+    
+};
 
 function clickedElement(e) {
-  if(isGameOver){
-    return
+  if (isGameOver) {
+    return;
   }
   const click = e.target;
   const clickedRow = click.dataset.row - 1;
@@ -107,8 +110,22 @@ function clickedElement(e) {
   game[clickedRow][clickedCol] = activeplayer + 1;
 
   const winnerId = +checkForGameOver();
-  if (winnerId !== 0){
-    gameOver(winnerId)
+  if (winnerId !== 0) {
+    gameOver(winnerId);
   }
+  console.log(winnerId);
+
   switchPlayer();
 }
+
+function restartFullGame() {
+  reset();
+  document.querySelectorAll(".score")[0].innerHTML = `Score: <span id="score-1 score">0</span>`
+  document.querySelectorAll(".score")[1].innerHTML = `Score: <span id="score-2 score">0</span>`
+  document.querySelectorAll(".users")[0].children[1].innerHTML = `PLAYER NAME`
+  document.querySelectorAll(".users")[1].children[1].innerHTML = `PLAYER NAME`
+  document.getElementById("active-game").style.display = "none"
+}
+
+
+
