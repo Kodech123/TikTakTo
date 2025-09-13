@@ -63,77 +63,109 @@ function clickedElement(e) {
   }
 
   function aiMove() {
-    let bestScore = -Infinity;
-    let move = null;
+  if (isGameOver) return;
 
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        if (game[i][j] === 0) {
-          game[i][j] = 2; // AI always player 2
-          let score = minimax(game, 0, false);
-          game[i][j] = 0;
-          if (score > bestScore) {
-            bestScore = score;
-            move = { i, j };
-          }
+  // 1. Try to win immediately
+  let winMove = findWinningMove(2);
+  if (winMove) {
+    makeAiChoice(winMove.i, winMove.j);
+    return;
+  }
+
+  // 2. Block human's winning move
+  let blockMove = findWinningMove(1);
+  if (blockMove) {
+    makeAiChoice(blockMove.i, blockMove.j);
+    return;
+  }
+
+  // 3. Opening strategy (center > corners)
+  if (currentRound === 1 && game[1][1] === 0) {
+    makeAiChoice(1, 1);
+    return;
+  }
+
+  // 4. Otherwise, minimax
+  let bestScore = -Infinity;
+  let move;
+
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      if (game[i][j] === 0) {
+        game[i][j] = 2; // AI move
+        let score = minimax(game, 0, false, -Infinity, Infinity);
+        game[i][j] = 0;
+        if (score > bestScore) {
+          bestScore = score;
+          move = { i, j };
         }
       }
     }
-
-    if (move) {
-      const index = move.i * 3 + move.j;
-      const cell = clickedField[index];
-      makeMove(move.i, move.j, cell, 1);
-
-      const winnerId = checkForGameOver();
-      if (winnerId !== 0) {
-        gameOver(winnerId);
-        return;
-      }
-
-      switchPlayer();
-      startTimer(); // restart timer after AI move
-
-    }
   }
+
+  if (move) makeAiChoice(move.i, move.j);
+}
+
+
+function makeAiChoice(i, j) {
+  const cell = document.querySelector(
+    `#game-board li[data-row="${i + 1}"][data-col="${j + 1}"]`
+  );
+  makeMove(i, j, cell, 1);
+
+  const winnerId = checkForGameOver();
+  if (winnerId !== 0) {
+    gameOver(winnerId);
+    return;
+  }
+
+  switchPlayer();
+  startTimer();
+}
+
 
   // Minimax algorithm for AI
-  function minimax(board, depth, isMaximizing) {
-    const result = checkWinnerForAI(board);
-    if (result !== null) {
-      if (result === 2) return 10 - depth;
-      if (result === 1) return depth - 10;
-      if (result === "draw") return 0;
-    }
-
-    if (isMaximizing) {
-      let bestScore = -Infinity;
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          if (board[i][j] === 0) {
-            board[i][j] = 2;
-            let score = minimax(board, depth + 1, false);
-            board[i][j] = 0;
-            bestScore = Math.max(score, bestScore);
-          }
-        }
-      }
-      return bestScore;
-    } else {
-      let bestScore = Infinity;
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          if (board[i][j] === 0) {
-            board[i][j] = 1;
-            let score = minimax(board, depth + 1, true);
-            board[i][j] = 0;
-            bestScore = Math.min(score, bestScore);
-          }
-        }
-      }
-      return bestScore;
-    }
+  function minimax(board, depth, isMaximizing, alpha, beta) {
+  const result = checkForGameOver();
+  if (result !== 0) {
+    if (result === 1) return -10 + depth;  // human wins
+    if (result === 2) return 10 - depth;   // AI wins
+    if (result === -1) return 0;           // draw
   }
+
+  if (isMaximizing) {
+    let bestScore = -Infinity;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[i][j] === 0) {
+          board[i][j] = 2;
+          let score = minimax(board, depth + 1, false, alpha, beta);
+          board[i][j] = 0;
+          bestScore = Math.max(score, bestScore);
+          alpha = Math.max(alpha, score);
+          if (beta <= alpha) return bestScore; // pruning
+        }
+      }
+    }
+    return bestScore;
+  } else {
+    let bestScore = Infinity;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        if (board[i][j] === 0) {
+          board[i][j] = 1;
+          let score = minimax(board, depth + 1, true, alpha, beta);
+          board[i][j] = 0;
+          bestScore = Math.min(score, bestScore);
+          beta = Math.min(beta, score);
+          if (beta <= alpha) return bestScore; // pruning
+        }
+      }
+    }
+    return bestScore;
+  }
+}
+
 
   function checkWinnerForAI(board) {
     // Rows & Columns
@@ -197,4 +229,20 @@ function clickedElement(e) {
         player[winnerId - 1].score;
     }
   }
+}
+
+function findWinningMove(playerId) {
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      if (game[i][j] === 0) {
+        game[i][j] = playerId;
+        if (checkForGameOver() === playerId) {
+          game[i][j] = 0; // reset
+          return { i, j };
+        }
+        game[i][j] = 0;
+      }
+    }
+  }
+  return null;
 }
